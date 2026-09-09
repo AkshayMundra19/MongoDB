@@ -1,0 +1,179 @@
+use FirstDB
+
+db.aggex.insertOne({
+    productId: "PROD05001",
+    productName: "Samsung Headphones 5001",
+    category: "Electronics",
+    subCategory: "Headphones",
+    brand: "Samsung",
+    price: 15000,
+    discountPercentage: 10,
+    discountedPrice: 13500,
+    quantity: 2,
+    revenue: 27000,
+    rating: 4.5,
+    reviewCount: 1200,
+    stock: 50,
+    inStock: true,
+    seller: {
+        name: "TechWorld",
+        sellerRating: 4.6
+    },
+    customer: {
+        customerId: "CUS5001",
+        city: "Bangalore",
+        state: "Karnataka",
+        age: 25
+    },
+    payment: {
+        method: "UPI",
+        transactionId: "TXN5001"
+    },
+    orderStatus: "Processing",
+    orderDate: new Date(),
+    tags: ["new", "popular"],
+    specifications: {
+        warranty: "2 years",
+        color: "Black",
+        weight: 1.5
+    },
+    isFeatured: true,
+    createdAt: new Date()
+})
+
+db.aggex.find({
+    category: "Electronics"
+})
+
+db.aggex.find({
+    inStock: true
+})
+
+db.aggex.find({
+    price: { $gt: 50000 }
+})
+
+db.aggex.find({
+    price: { $lt: 10000 }
+})
+
+db.aggex.find({
+    price: {
+        $gte: 10000,
+        $lte: 30000
+    }
+})
+
+db.aggex.find({
+    brand: "Samsung"
+})
+
+db.aggex.find({
+    "seller.name": "TechWorld"
+})
+
+db.aggex.find({
+    orderStatus: "Cancelled"
+})
+
+db.aggex.find({
+    isFeatured: true
+})
+
+db.aggex.find({
+    tags: "premium"
+})
+
+db.aggex.updateOne(
+    { productId: "PROD00001" },
+    { $set: { price: 25000 } }
+)
+
+db.aggex.updateOne(
+    { productId: "PROD00002" },
+    {
+        $set: {
+            price: 30000,
+            stock: 100,
+            inStock: true
+        }
+    }
+)
+
+db.aggex.updateOne(
+    { productId: "PROD00003" },
+    { $set: { "seller.name": "Premium Seller" } }
+)
+
+db.aggex.updateOne(
+    { productId: "PROD00004" },
+    { $push: { tags: "sale" } }
+)
+
+db.aggex.updateOne(
+    { productId: "PROD00005" },
+    { $addToSet: { tags: "electronics" } }
+)
+
+db.aggex.updateOne(
+    { productId: "PROD00006" },
+    { $inc: { stock: 20 } }
+)
+
+db.aggex.updateOne(
+    { productId: "PROD00006" },
+    { $inc: { stock: -5 } }
+)
+
+db.aggex.updateMany(
+    { category: "Laptops" },
+    { $set: { inStock: true } }
+)
+
+db.aggex.updateMany(
+    { brand: "Samsung" },
+    { $inc: { price: 1000 } }
+)
+
+db.aggex.updateMany(
+    { "seller.name": "TechWorld" },
+    { $set: { isFeatured: true } }
+)
+
+db.aggex.updateOne(
+    { productId: "PROD00010" },
+    {
+        $set: {
+            price: 25000,
+            inStock: true
+        },
+        $inc: {
+            stock: 10
+        },
+        $push: {
+            tags: "sale"
+        }
+    }
+)
+
+db.aggex.deleteOne({
+    productId: "PROD05001"
+})
+
+db.aggex.deleteMany({
+    orderStatus: "Cancelled"
+})
+
+db.aggex.deleteMany({
+    stock: 0
+})
+
+db.aggex.deleteMany({
+    price: { $gt: 90000 }
+})
+
+print(db.aggex.countDocuments())
+
+db.aggex.find().limit(5)
+
+print("CRUD Operations Completed Successfully!")
