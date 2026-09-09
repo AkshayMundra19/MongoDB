@@ -1,0 +1,697 @@
+AGGREGATION PIPELINES
+An Aggregation Pipeline is a framework in MongoDB used to process, transform, filter, group, sort, and analyze documents from a collection.
+Think of it like a data processing pipeline:
+MongoDB Collection
+       ↓
+   $match
+       ↓
+   $group
+       ↓
+   $sort
+       ↓
+   $project
+       ↓
+   Final Result
+Each operation is called an Aggregation Stage.
+Simple Definition
+Aggregation Pipeline = A sequence of stages where the output of one stage becomes the input of the next stage.
+
+use ecomDB
+
+// Optional: Start fresh
+db.products.drop()
+
+// Arrays used to generate realistic data
+const categories = [
+    "Electronics",
+    "Mobiles",
+    "Laptops",
+    "Home Appliances",
+    "Fashion",
+    "Books",
+    "Sports",
+    "Beauty",
+    "Grocery",
+    "Furniture"
+];
+
+const subCategories = {
+    "Electronics": ["Headphones", "Smartwatch", "Camera", "Speaker"],
+    "Mobiles": ["Android", "iPhone", "Feature Phone"],
+    "Laptops": ["Gaming", "Business", "Student"],
+    "Home Appliances": ["Refrigerator", "Washing Machine", "Microwave"],
+    "Fashion": ["Men", "Women", "Kids"],
+    "Books": ["Programming", "Fiction", "Education"],
+    "Sports": ["Cricket", "Football", "Fitness"],
+    "Beauty": ["Skincare", "Haircare", "Makeup"],
+    "Grocery": ["Snacks", "Beverages", "Staples"],
+    "Furniture": ["Chair", "Table", "Sofa"]
+};
+
+const brands = [
+    "Samsung",
+    "Apple",
+    "Sony",
+    "LG",
+    "HP",
+    "Dell",
+    "Lenovo",
+    "Nike",
+    "Adidas",
+    "Boat",
+    "OnePlus",
+    "AmazonBasics"
+];
+
+const cities = [
+    "Chennai",
+    "Coimbatore",
+    "Bangalore",
+    "Hyderabad",
+    "Mumbai",
+    "Delhi",
+    "Pune",
+    "Kochi",
+    "Kolkata",
+    "Ahmedabad"
+];
+
+const states = [
+    "Tamil Nadu",
+    "Karnataka",
+    "Telangana",
+    "Maharashtra",
+    "Delhi",
+    "Kerala",
+    "West Bengal",
+    "Gujarat"
+];
+
+const paymentMethods = [
+    "UPI",
+    "Credit Card",
+    "Debit Card",
+    "Net Banking",
+    "Cash on Delivery"
+];
+
+const orderStatuses = [
+    "Delivered",
+    "Shipped",
+    "Processing",
+    "Cancelled",
+    "Returned"
+];
+
+const sellers = [
+    "RetailHub",
+    "TechWorld",
+    "MegaStore",
+    "DigitalMart",
+    "SmartShop",
+    "PrimeRetail"
+];
+
+const tags = [
+    "new",
+    "popular",
+    "trending",
+    "premium",
+    "budget",
+    "best-seller",
+    "discount",
+    "limited-stock"
+];
+
+
+// Store documents temporarily
+let documents = [];
+
+
+// Generate 5000 documents
+for (let i = 1; i <= 5000; i++) {
+
+    const category =
+        categories[Math.floor(Math.random() * categories.length)];
+
+    const subCategory =
+        subCategories[category][
+            Math.floor(Math.random() * subCategories[category].length)
+        ];
+
+    const brand =
+        brands[Math.floor(Math.random() * brands.length)];
+
+    const city =
+        cities[Math.floor(Math.random() * cities.length)];
+
+    const state =
+        states[Math.floor(Math.random() * states.length)];
+
+    const paymentMethod =
+        paymentMethods[
+            Math.floor(Math.random() * paymentMethods.length)
+        ];
+
+    const orderStatus =
+        orderStatuses[
+            Math.floor(Math.random() * orderStatuses.length)
+        ];
+
+    const seller =
+        sellers[
+            Math.floor(Math.random() * sellers.length)
+        ];
+
+
+    const quantity =
+        Math.floor(Math.random() * 5) + 1;
+
+    const price =
+        Math.floor(Math.random() * 95000) + 500;
+
+    const discount =
+        Math.floor(Math.random() * 51);
+
+    const discountedPrice =
+        Math.round(
+            price - (price * discount / 100)
+        );
+
+    const rating =
+        Number(
+            (Math.random() * 4 + 1).toFixed(1)
+        );
+
+    const stock =
+        Math.floor(Math.random() * 500);
+
+
+    // Generate 2 random tags
+    const selectedTags = [];
+
+    for (let j = 0; j < 2; j++) {
+
+        selectedTags.push(
+            tags[Math.floor(Math.random() * tags.length)]
+        );
+    }
+
+
+    // Random date between 2024 and 2026
+    const startDate =
+        new Date("2024-01-01").getTime();
+
+    const endDate =
+        new Date("2026-08-25").getTime();
+
+    const randomDate =
+        new Date(
+            startDate +
+            Math.random() * (endDate - startDate)
+        );
+
+
+    // Create document
+    const product = {
+
+        productId:
+            "PROD" + String(i).padStart(5, "0"),
+
+        productName:
+            brand + " " + subCategory + " " + i,
+
+        category: category,
+
+        subCategory: subCategory,
+
+        brand: brand,
+
+        price: price,
+
+        discountPercentage: discount,
+
+        discountedPrice: discountedPrice,
+
+        quantity: quantity,
+
+        revenue:
+            discountedPrice * quantity,
+
+        rating: rating,
+
+        reviewCount:
+            Math.floor(Math.random() * 5000),
+
+        stock: stock,
+
+        inStock:
+            stock > 0,
+
+
+        seller: {
+
+            name: seller,
+
+            sellerRating:
+                Number(
+                    (Math.random() * 4 + 1).toFixed(1)
+                )
+        },
+
+
+        customer: {
+
+            customerId:
+                "CUS" +
+                String(
+                    Math.floor(Math.random() * 1000) + 1
+                ).padStart(4, "0"),
+
+            city: city,
+
+            state: state,
+
+            age:
+                Math.floor(Math.random() * 50) + 18
+        },
+
+
+        payment: {
+
+            method: paymentMethod,
+
+            transactionId:
+                "TXN" +
+                Math.random()
+                    .toString(36)
+                    .substring(2, 12)
+        },
+
+
+        orderStatus: orderStatus,
+
+        orderDate: randomDate,
+
+        tags: selectedTags,
+
+
+        specifications: {
+
+            warranty:
+                (Math.floor(Math.random() * 3) + 1) +
+                " years",
+
+            color: [
+                "Black",
+                "White",
+                "Blue",
+                "Red",
+                "Silver"
+            ][Math.floor(Math.random() * 5)],
+
+            weight:
+                Number(
+                    (Math.random() * 5 + 0.5).toFixed(2)
+                )
+        },
+
+
+        isFeatured:
+            Math.random() > 0.7,
+
+        createdAt: new Date()
+    };
+
+
+    documents.push(product);
+
+
+    // Insert every 500 documents
+    if (documents.length === 500) {
+
+        db.aggex.insertMany(documents);
+
+        documents = [];
+    }
+}
+
+// Insert remaining documents
+if (documents.length > 0) {
+
+    db.aggex.insertMany(documents);
+}
+print("5000 documents inserted successfully into aggex!");
+$match — Filtering
+$match is similar to SQL's WHERE.
+SQL
+SELECT *
+FROM products
+WHERE category = 'Electronics';
+MongoDB
+db.products.aggregate([
+    {
+        $match: {
+            category: "Electronics"
+Stage	Purpose
+$match	Filter documents
+$project	Select/modify fields
+$group	Group documents
+$sort	Sort documents
+$limit	Limit number of documents
+$skip	Skip documents
+$unwind	Convert array elements into documents
+$lookup	Join collections
+$addFields	Add new fields
+$set	Add/modify fields
+$count	Count documents
+$sample	Select random documents
+$out	Write results to another collection
+$merge	Merge results into a collection
+        }
+    }
+])
+
+
+
+
+
+
+
+
+
+
+
+
+
+db.products.aggregate([
+    {
+        $match: {
+            price: {
+                $gt: 50000
+            }
+        }
+    }
+])
+$project — Select Fields
+$project is used to control which fields appear in the output and can also create calculated fields.
+db.products.aggregate([
+    {
+        $project: {
+            productName: 1,
+            price: 1
+        }
+    }
+])
+You can also calculate values:
+db.products.aggregate([
+    {
+        $project: {
+            productName: 1,
+            totalValue: {
+                $multiply: ["$price", "$quantity"]
+            }
+        }
+    }
+])
+$group — Group Documents
+This is one of the most important aggregation stages.
+It is similar to SQL:
+GROUP BY
+Example:
+db.products.aggregate([
+    {
+        $group: {
+            _id: "$category"
+        }
+    }
+])
+We can perform calculations:
+db.products.aggregate([
+    {
+        $group: {
+            _id: "$category",
+            totalProducts: {
+                $sum: 1
+            },
+            totalQuantity: {
+                $sum: "$quantity"
+            },
+            averagePrice: {
+                $avg: "$price"
+            }
+        }
+    }
+])
+$sort — Sorting
+Similar to SQL:
+ORDER BY
+Example:
+db.products.aggregate([
+    {
+        $sort: {
+            price: -1
+        }
+    }
+])
+Values:
+1  → Ascending
+-1 → Descending
+
+$limit — Limit Results
+Similar to:
+LIMIT
+Example:
+db.products.aggregate([
+    {
+        $sort: {
+            price: -1
+        }
+    },
+    {
+        $limit: 2
+    }
+])
+This gives the top 2 most expensive products.
+$skip — Skip Documents
+Used for pagination.
+db.products.aggregate([
+    {
+        $skip: 2
+    }
+])
+This skips the first 2 documents.
+Very commonly used with:
+$skip + $limit
+for pagination.
+
+$unwind — Work With Arrays
+Suppose:
+{
+    name: "Laptop",
+    colors: ["Black", "Silver", "Blue"]
+}
+Using:
+db.products.aggregate([
+    {
+        $unwind: "$colors"
+    }
+])
+The document becomes:
+Laptop → Black
+Laptop → Silver
+Laptop → Blue
+So:
+$unwind converts each element of an array into a separate document.
+
+$lookup — Join Collections
+This is very important in MongoDB.
+MongoDB is NoSQL, but $lookup allows us to perform something similar to a SQL JOIN.
+Suppose we have:
+orders
+{
+    orderId: 101,
+    customerId: 1,
+    amount: 5000
+}
+customers
+{
+    customerId: 1,
+    name: "Vasanth"
+}
+We can use:
+db.orders.aggregate([
+    {
+        $lookup: {
+            from: "customers",
+            localField: "customerId",
+            foreignField: "customerId",
+            as: "customerDetails"
+        }
+    }
+])
+Result:
+{
+    orderId: 101,
+    customerId: 1,
+    amount: 5000,
+    customerDetails: [
+        {
+            customerId: 1,
+            name: "Vasanth"
+        }
+    ]
+}
+Think:
+$lookup = JOIN
+
+$count — Count Documents
+Example:
+db.products.aggregate([
+    {
+        $count: "totalProducts"
+    }
+])
+
+$addFields / $set
+Used to add or modify fields.
+db.products.aggregate([
+    {
+        $addFields: {
+            totalValue: {
+                $multiply: ["$price", "$quantity"]
+            }
+        }
+    }
+])
+Now each document gets:
+{
+    name: "Laptop",
+    price: 60000,
+    quantity: 5,
+    totalValue: 300000
+}
+$set can also be used for this purpose:
+{
+    $set: {
+        totalValue: {
+            $multiply: ["$price", "$quantity"]
+        }
+    }
+}
+
+Real Power Comes From Combining Stages
+The real concept of an Aggregation Pipeline is not just using one stage.
+For example:
+Find the top 3 most expensive Electronics products.
+db.products.aggregate([
+SQL	MongoDB
+WHERE	$match
+SELECT	$project
+GROUP BY	$group
+ORDER BY	$sort
+LIMIT	$limit
+OFFSET	$skip
+JOIN	$lookup
+COUNT()	$count / $sum
+AVG()	$avg
+SUM()	$sum
+MIN()	$min
+MAX()	$max
+    {
+        $match: {
+            category: "Electronics"
+        }
+    },
+    {
+        $sort: {
+            price: -1
+        }
+    },
+    {
+        $limit: 3
+    },
+    {
+        $project: {
+            _id: 0,
+            name: 1,
+            price: 1
+        }
+    }
+])
+Pipeline:
+              products
+                 ↓
+              $match      
+
+                 ↓
+        Electronics only
+                 ↓
+              $sort
+                 ↓
+       Highest → Lowest
+                 ↓
+              $limit
+                 ↓
+              Top 3
+                 ↓
+             $project
+                 ↓
+            Final Output
+
+Types of Aggregation Stages
+Instead of memorizing every stage individually, you can categorize them based on their purpose.
+1. Filtering Stages
+Used to remove unwanted documents.
+$match
+
+2. Projection / Transformation Stages
+Used to select, modify, or create fields.
+$project
+$set
+$addFields
+$unset
+$replaceWith
+
+3. Grouping Stages
+Used to combine documents and calculate values.
+$group
+$count
+Common operators inside $group:
+$sum
+$avg
+$min
+$max
+$first
+$last
+$push
+$addToSet
+
+4. Sorting and Pagination Stages
+$sort
+$skip
+$limit
+
+5. Array Processing Stages
+$unwind
+And array operators such as:
+$filter
+$map
+$reduce
+
+6. Join / Relationship Stages
+$lookup
+$graphLookup
+
+7. Collection Output Stages
+Used when aggregation results need to be written somewhere.
+$out
+$merge
+
+8. Sampling / Statistical Stages
+$sample
+$bucket
+$bucketAuto
+These are useful for analytics and data analysis.
+
+
