@@ -1,0 +1,459 @@
+exes :  // Product Collection 
+1. Simple Index 
+Simple Index = index on ONE field
+Compound Index = index on TWO or MORE fields
+
+use("ecomDB")
+// db.createCollection("products")
+// // Remove old data if it exists
+
+const categories = [
+    "Electronics",
+    "Mobiles",
+    "Laptops",
+    "Clothing",
+    "Books",
+    "Furniture",
+    "Shoes",
+    "Accessories",
+    "Home Appliances",
+    "Sports"
+];
+
+const brands = [
+    "Apple",
+    "Samsung",
+    "Dell",
+    "HP",
+    "Lenovo",
+    "Sony",
+    "Nike",
+    "Adidas",
+    "Puma",
+    "OnePlus"
+];
+
+const cities = [
+    "Chennai",
+    "Bangalore",
+    "Hyderabad",
+    "Coimbatore",
+    "Salem",
+    "Erode",
+    "Tiruchengode",
+    "Madurai",
+    "Trichy",
+    "Pondicherry"
+];
+
+const tags = [
+    "new",
+    "popular",
+    "discount",
+    "premium",
+    "bestseller",
+    "trending",
+    "featured",
+    "budget"
+];
+
+const paymentMethods = [
+    "UPI",
+    "Credit Card",
+    "Debit Card",
+    "Cash",
+    "Net Banking"
+];
+
+
+// Array to temporarily store documents
+let products = [];
+
+
+// Generate 5000 documents
+for (let i = 1; i <= 5000; i++) {
+
+    let category = categories[i % categories.length];
+
+    let brand = brands[i % brands.length];
+
+    let city = cities[i % cities.length];
+
+    let price = Math.floor(Math.random() * 90000) + 1000;
+
+    let quantity = Math.floor(Math.random() * 10) + 1;
+
+    let rating = Number(
+        (Math.random() * 4 + 1).toFixed(1)
+    );
+
+
+    let productTags = [
+        tags[i % tags.length],
+        tags[(i + 2) % tags.length]
+    ];
+
+
+    let product = {
+
+        productId: i,
+
+        name: brand + " Product " + i,
+
+        category: category,
+
+        brand: brand,
+
+        price: price,
+
+        quantity: quantity,
+
+        rating: rating,
+
+        description:
+            "This is a high quality " +
+            category +
+            " product from " +
+            brand +
+            " with excellent features and performance.",
+
+        tags: productTags,
+
+
+        seller: {
+
+            sellerId: 1000 + (i % 100),
+
+            name: "Seller " + (i % 100),
+
+            city: city
+        },
+
+
+        location: {
+
+            type: "Point",
+
+            coordinates: [
+                76.95 + (Math.random() * 0.5),
+                11.00 + (Math.random() * 0.5)
+            ]
+        },
+        paymentMethods: paymentMethods,
+        isActive: i % 5 !== 0,
+        createdAt: new Date(
+            2024,
+            i % 12,
+            (i % 28) + 1
+        )
+    };
+    // Add email to some documents
+    // Useful for Sparse Index
+    if (i % 3 === 0) {
+
+        product.email =
+            "customer" + i + "@example.com";
+    }
+    // Add discount to some documents
+    // Useful for Partial Index
+    if (i % 4 === 0) {
+
+        product.discount =
+            Math.floor(Math.random() * 40) + 5;
+    }
+    // Add document to array
+    products.push(product);
+    // Insert in batches of 500
+    if (products.length === 500) {
+
+        db.product.insertMany(products);
+
+        products = [];
+    }
+}
+// Insert remaining documents
+if (products.length > 0) {
+
+    db.product.insertMany(products);
+}
+print("5000 documents inserted successfully!");
+
+
+1.Count the Number of Documents 
+db.products.countDocuments()
+
+2.What is the Need of Using Index 
+db.products.find({price : {$gt:50000}}).explain("executionStats")
+
+ executionStats: {
+    executionSuccess: true,
+    nReturned: NumberInt('2310'),
+    executionTimeMillis: NumberInt('8'),
+    totalKeysExamined: NumberInt('0'),
+    totalDocsExamined: NumberInt('5000'),
+    executionStages: {
+      isCached: false,
+      stage: 'COLLSCAN',
+      filter: {
+        price: {
+          $gt: NumberInt('50000')
+        }
+      },
+3.What Happens If We Apply Index
+db.products.createIndex({ price: 1 })
+
+db.products.find({price : {$gt:50000}}).explain("executionStats")
+
+
+executionStats: {
+    executionSuccess: true,
+    nReturned: NumberInt('2310'),
+    executionTimeMillis: NumberInt('3'),
+    totalKeysExamined: NumberInt('2310'),
+    totalDocsExamined: NumberInt('2310'),
+    executionStages: {
+      isCached: false,
+      stage: 'FETCH',
+      nReturned: NumberInt('2310'),
+      executionTimeMillisEstimate: NumberInt('2'),
+
+4.How Can We Find To Which Col Does We Applied the Index 
+ db.products.getIndexes()
+[
+  {
+    v: NumberInt('2'),
+    key: {
+      _id: NumberInt('1')
+    },
+    name: '_id_'
+  },
+  {
+    v: NumberInt('2'),
+    key: {
+      price: NumberInt('1')
+    },
+    name: 'price_1'
+  }
+]
+To Drop The Index : db.products.dropIndex("price_1")
+ Compound Index:
+A Compound Index in MongoDB is an index created on two or more fields of a document, which helps MongoDB efficiently execute queries that use those fields together.
+1.What is the Need of Using Compound Index 
+
+db.products.find({
+    category: "Electronics",
+    price: { $gt: 50000 }
+}).explain("executionStats")
+
+
+executionStats: {
+    executionSuccess: true,
+    nReturned: NumberInt('225'),
+    executionTimeMillis: NumberInt('3'),
+    totalKeysExamined: NumberInt('0'),
+    totalDocsExamined: NumberInt('5000'),
+    executionStages: {
+      isCached: false,
+      stage: 'COLLSCAN',
+      filter: {
+        $and: [
+          {
+            category: {
+              $eq: 'Electronics'
+            }
+          },
+          {
+            price: {
+              $gt: NumberInt('50000')
+2.What Happens If We Apply Compound Index
+db.products.createIndex({
+    category: 1,
+    price: -1
+})
+
+  1  :    Ascending Order 
+-1  :   Descending Order 
+
+
+
+
+
+
+   Multikey Index
+A Multikey Index is an index that MongoDB creates on a field whose value is an array.
+Simple Definition
+A Multikey Index is an index used to efficiently query fields that contain arrays. MongoDB creates index entries for the individual elements of the array.
+{
+    name: "Laptop",
+    brand: "Dell",
+    tags: ["electronics", "computer", "laptop"]
+}
+db.products.createIndex({
+    tags: 1
+})
+
+db.products.find({
+    tags: "bestseller"
+}).explain("executionStats")
+
+Text Index
+A Text Index in MongoDB is an index designed to efficiently search for words or phrases inside string fields.
+Simple Definition
+A Text Index allows MongoDB to perform text searches on string content, such as searching for specific words in product descriptions, articles, reviews, or comments.
+
+db.products.find({  
+      description: 'This is a high quality Clothing product from HP with excellent features and performance.'
+}).explain("executionStats")
+
+db.products.createIndex({
+    description: "text"
+})
+db.products.find({
+    $text: {
+        $search: "Samsung"
+    }
+}).explain("executionStats")
+
+Hashed Index in MongoDB
+A Hashed Index is an index where MongoDB stores a hash value of the indexed field instead of the field's original value.
+Simple Definition
+A Hashed Index uses a hash function to generate a hash value for a field and is mainly useful for equality-based queries and distributing data evenly across shards.
+db.products.createIndex({
+    productId: "hashed"
+})
+db.products.getIndexes()
+db. products.find({
+    productId: 101
+})
+
+Geospatial Index in MongoDB
+A Geospatial Index in MongoDB is an index used to efficiently store and search location-based data, such as latitude/longitude coordinates.
+Simple Definition
+A Geospatial Index allows MongoDB to efficiently perform queries based on geographical locations, such as finding nearby restaurants, shops, hospitals, or calculating distances between locations.
+location: {
+    type: "Point",
+    coordinates: [longitude, latitude]
+}
+db.products.createIndex({
+    location: "2dsphere"
+})
+db.products.find({
+    location: {
+        $near: {
+            $geometry: {
+                type: "Point",
+                coordinates: [77.0, 11.1]
+            },
+            $maxDistance: 10000
+        }
+    }
+})
+Unique Index And Sparse in MongoDB
+A Unique Index is an index that ensures that duplicate values are not allowed in the indexed field.
+Simple Definition
+A Unique Index in MongoDB prevents duplicate values from being stored in the indexed field.
+// db.products.find({
+//     email: null
+// })
+// db.products.createIndex(
+//     { email: 1 },
+//     {
+//         unique: true,
+//         sparse: true
+//     }
+// )
+// db.products.getIndexes()
+db.products.findOne({
+    email: "customer3@example.com"
+})
+
+1. Partial Index
+Definition
+A Partial Index is an index that only indexes documents that satisfy a specified filter condition.
+In simple words:
+"Don't index every document. Index only the documents I choose."
+
+
+Example
+Suppose your users collection contains:
+{
+    name: "Vasanth",
+    email: "vasanth@gmail.com",
+    status: "active"
+}
+{
+    name: "Rahul",
+    email: "rahul@gmail.com",
+    status: "inactive"
+}
+{
+    name: "Kumar",
+    email: "kumar@gmail.com",
+    status: "active"
+}
+Suppose you only want an index for active users.
+You can create:
+db.users.createIndex(
+    { email: 1 },
+    {
+        partialFilterExpression: {
+            status: "active"
+        }
+    }
+)
+Now the index contains only:
+Vasanth → vasanth@gmail.com
+Kumar   → kumar@gmail.com
+Rahul is not included because:
+status = "inactive"
+
+Wildcard Index
+Now let's look at Wildcard Index.
+Definition
+A Wildcard Index is an index that allows MongoDB to index unknown or arbitrary fields within documents, making it useful when documents have highly variable or dynamic structures.
+In simple words:
+"I don't know exactly which fields users will search, so index fields dynamically."
+
+Example
+Suppose your documents have different fields.
+Document 1:
+{
+    name: "Laptop",
+    brand: "Dell",
+    price: 60000
+}
+Document 2:
+{
+    name: "Phone",
+    manufacturer: "Samsung",
+    storage: "256GB"
+}
+Document 3:
+{
+    name: "Camera",
+    megapixels: 48,
+    lens: "Wide"
+}
+The fields are different.
+Creating individual indexes for every possible field could become difficult:
+db.products.createIndex({ brand: 1 })
+db.products.createIndex({ manufacturer: 1 })
+db.products.createIndex({ storage: 1 })
+db.products.createIndex({ megapixels: 1 })
+db.products.createIndex({ lens: 1 })
+Instead, you can use a Wildcard Index:
+db.products.createIndex({
+    "$**": 1
+})
+$** means:
+Index fields throughout the document.
+
+
+
+
+
+
+
+
+
+
